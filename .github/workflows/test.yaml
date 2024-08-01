@@ -31,6 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # todo run unit tests in docker containers, as the dependencies are not installed here
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
