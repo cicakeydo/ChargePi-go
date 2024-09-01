@@ -119,4 +119,4 @@ information.
 
 ## License
 
-ChargePi-go is licensed under the [MIT License](LICENSE.txt).
+ChargePi-go is licensed under the [MIT License](LICENSE).
