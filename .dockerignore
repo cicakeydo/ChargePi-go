@@ -6,10 +6,17 @@
 *.test
 *.out
 
-LICENSE.txt
+LICENSE.md
 .idea
+.run
 .github/
 build/
 docs/
 deployments/
 ReadMe.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+
+ui/node_modules
+ui/build
+ui/.next
