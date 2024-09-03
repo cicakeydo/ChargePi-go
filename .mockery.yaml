@@ -1,0 +1,77 @@
+with-expecter: true
+dir: mocks
+outpkg: mocks
+filename: "mock_{{.PackageName}}_{{.InterfaceName}}.go"
+mockname: "Mock{{.InterfaceName}}"
+packages:
+  github.com/ChargePi/ChargePi-go/internal/auth:
+    interfaces:
+      LocalAuthList:
+      TagRepository:
+      LocalAuthListRepository:
+      Cache:
+
+  github.com/ChargePi/ChargePi-go/internal/chargepoint:
+    interfaces:
+      ChargePoint:
+
+  github.com/ChargePi/ChargePi-go/internal/sessions:
+    interfaces:
+      SessionRepository:
+
+      Service:
+        config:
+          mockname: "MockSession{{.InterfaceName}}"
+
+
+  github.com/ChargePi/ChargePi-go/internal/diagnostics:
+    interfaces:
+      Manager:
+        config:
+          mockname: "MockDiagnostics{{.InterfaceName}}"
+
+      uploader:
+
+  github.com/ChargePi/ChargePi-go/internal/evse/manager:
+    interfaces:
+      Manager:
+        config:
+          mockname: "MockEVSE{{.InterfaceName}}"
+
+  github.com/ChargePi/ChargePi-go/internal/evse:
+    interfaces:
+      EVSE:
+
+  github.com/ChargePi/ChargePi-go/internal/users:
+    interfaces:
+      UserRepository:
+      Service:
+        config:
+          mockname: "MockUser{{.InterfaceName}}"
+
+  github.com/ChargePi/ChargePi-go/internal/smart-charging:
+    interfaces:
+      Manager:
+        config:
+          mockname: "MockSmartCharging{{.InterfaceName}}"
+      ChargingScheduleRepository:
+
+  github.com/ChargePi/ChargePi-go/pkg/hardware/display:
+    interfaces:
+      Display:
+
+  github.com/ChargePi/ChargePi-go/pkg/hardware/evcc:
+    interfaces:
+      EVCC:
+
+  github.com/ChargePi/ChargePi-go/pkg/hardware/indicator:
+    interfaces:
+      Indicator:
+
+  github.com/ChargePi/ChargePi-go/pkg/hardware/reader:
+    interfaces:
+      Reader:
+
+  github.com/ChargePi/ChargePi-go/pkg/hardware/power-meter:
+    interfaces:
+      PowerMeter:
