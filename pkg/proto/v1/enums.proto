@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api;
 
-option go_package = "github.com/ChargePi/ChargePi-go/pkg/grpc";
+option go_package = "github.com/ChargePi/ChargePi-go/pkg/proto/v1/grpc";
 
 enum ProtocolVersion{
   OCPP16 = 0;
@@ -45,4 +45,10 @@ enum ConnectorType{
   TYPE2 = 1;
   SCHUKO = 2;
   CHADEMO = 3;
+};
+
+enum RequestStatus{
+  Success = 0;
+  Error = 1;
+  Pending = 2;
 };

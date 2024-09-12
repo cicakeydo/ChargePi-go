@@ -1,16 +1,18 @@
 syntax = "proto3";
 
 package api;
-option go_package = "github.com/ChargePi/ChargePi-go/pkg/grpc";
+option go_package = "github.com/ChargePi/ChargePi-go/pkg/proto/v1/grpc";
 
 import "google/protobuf/empty.proto";
-import "charge-point.proto";
+import "google/protobuf/timestamp.proto";
+import "enums.proto";
 
 // Local auth list
 service Tag {
   rpc GetAuthorizedCards (google.protobuf.Empty) returns (GetAuthorizedCardsResponse) {}
   rpc AddAuthorizedCards (AddAuthorizedCardsRequest) returns (AddAuthorizedCardsResponse) {}
   rpc RemoveAuthorizedCard (RemoveCardRequest) returns (RemoveCardResponse) {}
+  rpc GetAuthorizationHistory (google.protobuf.Empty) returns (AuthorizationHistoryResponse) {}
 }
 
 message AddAuthorizedCardsRequest {
@@ -31,5 +33,21 @@ message RemoveCardRequest {
 }
 
 message RemoveCardResponse {
-  string Status = 1;
+  api.RequestStatus Status = 1;
+}
+
+message AuthorizationHistoryResponse {
+  repeated AuthorizationHistoryEntry History = 1;
+}
+
+message AuthorizationHistoryEntry {
+  google.protobuf.Timestamp Timestamp = 1;
+  string TagId = 2;
+  string Status = 3;
+}
+
+message AuthorizedCard{
+  string TagId = 1;
+  string Status = 2;
+  optional google.protobuf.Timestamp ExpiryDate = 3;
 }

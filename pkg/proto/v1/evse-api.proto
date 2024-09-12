@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package api;
-option go_package = "github.com/ChargePi/ChargePi-go/pkg/grpc";
+option go_package = "github.com/ChargePi/ChargePi-go/pkg/proto/v1/grpc";
 
 import "connector.proto";
 import "hardware.proto";
@@ -14,7 +14,7 @@ service Evse {
   rpc GetEVSE (GetEvseRequest) returns (GetEvseResponse) {}
   rpc SetEVCC (SetEVCCRequest) returns (SetEvccResponse) {}
   rpc SetPowerMeter (SetPowerMeterRequest) returns (SetPowerMeterResponse) {}
-  rpc GetUsageForEVSE (GetUsageForEVSERequest) returns (stream GetUsageForEVSEResponse) {}
+  rpc GetEVSEUsage (GetUsageForEVSERequest) returns (stream GetUsageForEVSEResponse) {}
 }
 
 /*------------------ GetEVSEs ------------------------ */

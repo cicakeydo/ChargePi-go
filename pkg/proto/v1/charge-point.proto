@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 package api;
-option go_package = "github.com/ChargePi/ChargePi-go/pkg/grpc";
+option go_package = "github.com/ChargePi/ChargePi-go/pkg/proto/v1/grpc";
 
 import "hardware.proto";
-import "charge-point.proto";
+import "enums.proto";
 import "google/protobuf/empty.proto";
 
 service ChargePoint {
@@ -28,16 +28,19 @@ service ChargePoint {
   rpc GetChargePointDetails(google.protobuf.Empty) returns (GetChargePointDetailsResponse) {}
   rpc ChangeChargePointDetails(ChangeChargePointDetailsRequest) returns (ChangeChargePointDetailsResponse) {}
 
-  // OCPP configuration variable management
-  rpc GetOCPPVariables(google.protobuf.Empty) returns (GetVariablesResponse) {}
-  rpc SetOCPPVariables(SetVariablesRequest) returns (SetVariablesResponse) {}
-  rpc GetOCPPVariable(GetVariableRequest) returns (OcppVariable) {}
-
   // Details
   rpc GetVersion(google.protobuf.Empty) returns (GetVersionResponse) {}
   rpc GetStatus(google.protobuf.Empty) returns (GetStatusResponse) {}
 
   rpc Restart(RestartRequest) returns (google.protobuf.Empty) {}
+
+  // Disconnect
+  rpc Disconnect(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+  // Connect
+  rpc Connect(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+
+  //rpc StartCharging(StartChargingRequest) returns (StartChargingResponse) {}
+  //rpc StopCharging(StopChargingRequest) returns (StopChargingResponse) {}
 }
 
 /*------------------ ConnectionDetails ------------------------ */
@@ -128,21 +131,38 @@ message GetIndicatorSettingsResponse {
   Indicator Indicator = 1;
 }
 
-/*------------------ OCPP variables ------------------------ */
-
-message GetVariableRequest {
-  string Key = 1;
+message ConnectionSettings{
+  optional string chargePointId = 1;
+  optional string url = 2;
+  ProtocolVersion ProtocolVersion = 3;
+  optional string BasicAuthUsername = 4;
+  optional string BasicAuthPassword = 5;
+  optional TLS TLS = 6;
 }
 
-message GetVariablesResponse {
-  repeated OcppVariable Variables = 1;
+message TLS {
+  optional string CACertificate = 1;
+  optional string ClientCertificate = 2;
+  optional string ClientPrivateKey = 3;
 }
 
-message SetVariablesRequest {
-  repeated OcppVariable Variables = 1;
+message ChargePointInfo{
+  optional string Type = 1;
+  optional float MaxPower = 2;
+  OcppInfo OcppInfo = 4;
+  FreeCharging FreeCharging = 5;
 }
 
-message SetVariablesResponse {
-  repeated string Statuses = 1;
+message OcppInfo{
+  string Vendor = 1;
+  string Model = 2;
+  optional string Iccid = 3;
+  optional string Imsi = 4;
+  optional string ChargeBoxSerialNumber = 5;
+  optional string ChargePointSerialNumber = 6;
 }
 
+message FreeCharging{
+  bool Enabled = 1;
+  optional int32 MaxChargingTime = 2;
+}
