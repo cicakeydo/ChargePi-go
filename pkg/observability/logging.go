@@ -1,11 +1,10 @@
-package logging
+package observability
 
 import (
-	"fmt"
 	"log/syslog"
+	"path/filepath"
 
-	"github.com/ChargePi/ChargePi-go/internal/pkg/models/settings"
-	"github.com/ChargePi/ChargePi-go/internal/pkg/util"
+	"github.com/ChargePi/ChargePi-go/pkg/util"
 	graylog "github.com/gemnasium/logrus-graylog-hook/v3"
 	"github.com/lorenzodonini/ocpp-go/ocppj"
 	"github.com/lorenzodonini/ocpp-go/ws"
@@ -14,11 +13,37 @@ import (
 	lSyslog "github.com/sirupsen/logrus/hooks/syslog"
 )
 
-const LogFileName = "chargepi.log"
-const LogFileDir = "/var/log/chargepi"
+const (
+	LogFileName = "chargepi.log"
+	LogFileDir  = "/var/log/chargepi"
+)
 
-// Setup setup logs
-func Setup(logger *log.Logger, loggingConfig settings.Logging, isDebug bool) {
+type LogType string
+
+const (
+	RemoteLogging  = LogType("remote")
+	ConsoleLogging = LogType("console")
+)
+
+type LogFormat string
+
+const (
+	Syslog = LogFormat("syslog")
+	Gelf   = LogFormat("gelf")
+)
+
+type Logging struct {
+	LogTypes []Type `json:"logTypes,omitempty" yaml:"logTypes" mapstructure:"logTypes"`
+}
+
+type Type struct {
+	Type    string  `json:"type,omitempty" yaml:"type" mapstructure:"type" validate:"required"` // remote, console
+	Format  *string `json:"format,omitempty" yaml:"format" mapstructure:"format"`               // gelf, syslog, json, etc
+	Address *string `json:"address,omitempty" yaml:"address" mapstructure:"address"`
+}
+
+// SetupLogging setup logs
+func SetupLogging(logger *log.Logger, loggingConfig Logging, isDebug bool) {
 	// Default logging settings
 	logLevel := log.InfoLevel
 	formatter := &log.JSONFormatter{}
@@ -34,7 +59,7 @@ func Setup(logger *log.Logger, loggingConfig settings.Logging, isDebug bool) {
 	logger.SetLevel(logLevel)
 
 	// Setup file logging
-	fileLogging(logger, fmt.Sprintf("%s/%s", LogFileDir, LogFileName))
+	fileLogging(logger, filepath.Join(LogFileDir, LogFileName))
 
 	// Setup remote logging, if configured
 	for _, logType := range loggingConfig.LogTypes {
