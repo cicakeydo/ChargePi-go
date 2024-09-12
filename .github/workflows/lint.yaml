@@ -37,3 +37,5 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         with:
           version: latest
+          args: --timeout=2m
+          skip-cache: false
