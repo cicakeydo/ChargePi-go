@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	chargePoint "github.com/ChargePi/ChargePi-go/internal/pkg/models/charge-point"
+	chargePoint "github.com/ChargePi/ChargePi-go/internal/chargepoint"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

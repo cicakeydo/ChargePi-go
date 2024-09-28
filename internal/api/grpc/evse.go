@@ -2,11 +2,11 @@ package grpc
 
 import (
 	"context"
-	"github.com/ChargePi/ChargePi-go/internal/evse/manager"
 	"time"
 
 	"github.com/ChargePi/ChargePi-go/internal/evse"
-	"github.com/ChargePi/ChargePi-go/pkg/grpc"
+	"github.com/ChargePi/ChargePi-go/internal/evse/manager"
+	"github.com/ChargePi/ChargePi-go/pkg/proto/v1/grpc"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/types"
 	"github.com/samber/lo"
@@ -39,12 +39,16 @@ func (s *Service) GetEVSEs(ctx context.Context, empty *empty.Empty) (*grpc.GetEv
 
 func (s *Service) AddEVSE(ctx context.Context, request *grpc.AddEvseRequest) (*grpc.AddEvseResponse, error) {
 	response := &grpc.AddEvseResponse{
-		Status: "Failed",
+		Status: grpc.ResponseStatus_Error,
 	}
 
 	// todo
-	// s.evseManager.AddEVSE()
+	err := s.evseManager.AddEVSEFromSettings(ctx, evse.Settings{})
+	if err != nil {
+		return nil, err
+	}
 
+	response.Status = grpc.ResponseStatus_Success
 	return response, nil
 }
 
@@ -62,6 +66,14 @@ func (s *Service) GetEVSE(ctx context.Context, request *grpc.GetEvseRequest) (*g
 
 func (s *Service) SetEVCC(ctx context.Context, request *grpc.SetEVCCRequest) (*grpc.SetEvccResponse, error) {
 	// todo
+
+	evse, err := s.evseManager.GetEVSE(int(request.EvseId))
+	if err != nil {
+		return nil, err
+	}
+
+	evse.SetEvcc(nil)
+
 	return nil, nil
 }
 
@@ -70,7 +82,7 @@ func (s *Service) SetPowerMeter(ctx context.Context, request *grpc.SetPowerMeter
 	return nil, nil
 }
 
-func (s *Service) GetUsageForEVSE(request *grpc.GetUsageForEVSERequest, server grpc.Evse_GetUsageForEVSEServer) error {
+func (s *Service) GetEVSEUsage(request *grpc.GetUsageForEVSERequest, server grpc.Evse_GetEVSEUsageServer) error {
 	evseWithId, err := s.evseManager.GetEVSE(int(request.EvseId))
 	if err != nil {
 		return err
@@ -84,9 +96,11 @@ Loop:
 		case <-ctx.Done():
 			break Loop
 		default:
-
 			// Sample power meter
-			samples := evseWithId.SamplePowerMeter([]types.Measurand{types.MeasurandEnergyActiveImportRegister})
+			samples, err := evseWithId.SamplePowerMeter([]types.Measurand{types.MeasurandEnergyActiveImportRegister})
+			if err != nil {
+				return err
+			}
 
 			// Convert to grpc samples
 			var samplesToReturn []*grpc.Sample
@@ -94,7 +108,7 @@ Loop:
 				samplesToReturn = append(samplesToReturn, toSample(sample))
 			}
 
-			err := server.Send(&grpc.GetUsageForEVSEResponse{
+			err = server.Send(&grpc.GetUsageForEVSEResponse{
 				Samples: samplesToReturn,
 			})
 			if err != nil {

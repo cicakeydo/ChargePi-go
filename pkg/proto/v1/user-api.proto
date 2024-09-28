@@ -4,6 +4,7 @@ package api;
 option go_package = "github.com/ChargePi/ChargePi-go/pkg/proto/v1/grpc";
 
 import "google/protobuf/empty.proto";
+import "enums.proto";
 
 // User management API
 service Users {
@@ -20,7 +21,7 @@ message User{
 }
 
 message AddUserResponse {
-  string Status = 1;
+  ResponseStatus Status = 1;
 }
 
 message GetUsersResponse {
@@ -36,5 +37,5 @@ message RemoveUserRequest {
 }
 
 message RemoveUserResponse {
-  string Status = 1;
+  ResponseStatus Status = 1;
 }

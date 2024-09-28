@@ -12,6 +12,15 @@ type grpcTestSuite struct {
 }
 
 func (s *grpcTestSuite) SetupTest() {
+
+}
+
+func (s *grpcTestSuite) TestAuthMiddleware() {
+
+}
+
+func (s *grpcTestSuite) TestHealthcheck() {
+
 }
 
 func TestGrpc(t *testing.T) {

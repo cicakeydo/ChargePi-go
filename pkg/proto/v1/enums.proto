@@ -47,7 +47,7 @@ enum ConnectorType{
   CHADEMO = 3;
 };
 
-enum RequestStatus{
+enum ResponseStatus{
   Success = 0;
   Error = 1;
   Pending = 2;

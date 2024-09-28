@@ -3,18 +3,18 @@ package grpc
 import (
 	"context"
 
-	"github.com/ChargePi/ChargePi-go/internal/users/pkg/models"
-	"github.com/ChargePi/ChargePi-go/internal/users/service"
-	"github.com/ChargePi/ChargePi-go/pkg/grpc"
+	"github.com/ChargePi/ChargePi-go/internal/users"
+	"github.com/ChargePi/ChargePi-go/internal/users/models"
+	"github.com/ChargePi/ChargePi-go/pkg/proto/v1/grpc"
 	"github.com/golang/protobuf/ptypes/empty"
 )
 
 type UserService struct {
 	grpc.UnimplementedUsersServer
-	userService service.Service
+	userService users.Service
 }
 
-func NewUserService(userService service.Service) *UserService {
+func NewUserService(userService users.Service) *UserService {
 	return &UserService{
 		userService: userService,
 	}
@@ -77,6 +77,6 @@ func toUser(user models.User) *grpc.User {
 	return &grpc.User{
 		Username: user.Username,
 		Password: user.Password,
-		Role:     user.Role,
+		Role:     string(user.Role),
 	}
 }

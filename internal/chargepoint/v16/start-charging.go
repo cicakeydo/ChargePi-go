@@ -1,18 +1,82 @@
 package v16
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ChargePi/ChargePi-go/internal/pkg/models/charge-point"
+	"github.com/ChargePi/ChargePi-go/internal/chargepoint"
+	"github.com/ChargePi/ChargePi-go/internal/evse"
 	"github.com/ChargePi/ocppManager-go/ocpp_v16"
 	"github.com/lorenzodonini/ocpp-go/ocpp"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/core"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/types"
+	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 )
+
+func (cp *ChargePoint) OnRemoteStartTransaction(request *core.RemoteStartTransactionRequest) (confirmation *core.RemoteStartTransactionConfirmation, err error) {
+	var (
+		logInfo = cp.logger.WithFields(log.Fields{
+			"connectorId": request.ConnectorId,
+			"tagId":       request.IdTag,
+		})
+		response = types.RemoteStartStopStatusRejected
+		conn     evse.EVSE
+	)
+
+	logInfo.Infof("Received request %s", request.GetFeatureName())
+
+	// If the connector is specified, check if it exists and is available.
+	if request.ConnectorId != nil {
+		conn, err = cp.evseManager.GetEVSE(*request.ConnectorId)
+	} else {
+		conn, err = cp.evseManager.GetAvailableEVSE()
+	}
+
+	if err == nil && conn.IsAvailable() {
+		logInfo.Infof("Remote starting transaction")
+
+		// Delay the charging by 3 seconds
+		response = types.RemoteStartStopStatusAccepted
+		_, schedulerErr := cp.scheduler.Every(1).Seconds().LimitRunsTo(1).Do(cp.remoteStart, conn, 1, request.IdTag)
+		if schedulerErr != nil {
+			response = types.RemoteStartStopStatusRejected
+		}
+	}
+
+	return core.NewRemoteStartTransactionConfirmation(response), nil
+}
+
+func (cp *ChargePoint) remoteStart(evseId, connectorId int, tagId string) {
+	logInfo := cp.logger.WithFields(log.Fields{
+		"evseId":      evseId,
+		"connectorId": connectorId,
+		"tagId":       tagId,
+	})
+
+	if cp.state.GetAvailability() != core.AvailabilityTypeOperative {
+		return
+	}
+
+	// Authorize the tag from either the list, cache or the backend.
+	authorizeRemoteTx, _ := cp.settingsManager.GetConfigurationValue(ocpp_v16.AuthorizeRemoteTxRequests)
+	if authorizeRemoteTx != nil && *authorizeRemoteTx == "true" {
+		logInfo.Info("Authorizing RemoteStart transaction")
+
+		if !cp.isAuthorized(tagId) {
+			logInfo.Warn("Tag unauthorized")
+			return
+		}
+	}
+
+	// Start the charging
+	err := cp.StartCharging(evseId, connectorId, tagId)
+	if err != nil {
+		logInfo.WithError(err).Error("Unable to start charging remotely")
+	}
+}
 
 func (cp *ChargePoint) StartCharging(evseId, connectorId int, tagId string) error {
 	logInfo := cp.logger.WithFields(log.Fields{
@@ -23,21 +87,39 @@ func (cp *ChargePoint) StartCharging(evseId, connectorId int, tagId string) erro
 	logInfo.Infof("Starting charging")
 
 	// Charge point must be available to accept transactions
-	if cp.availability != core.AvailabilityTypeOperative {
-		return chargePoint.ErrChargePointUnavailable
+	if cp.state.GetAvailability() != core.AvailabilityTypeOperative {
+		return chargepoint.ErrChargePointUnavailable
 	}
 
-	// Authorize the tag from either the list, cache or the backend.
-	if !cp.isTagAuthorized(tagId) {
-		return chargePoint.ErrTagUnauthorized
+	// Authorize the tag from either the list, cache or the backend. If no authorization is required, skip this step.
+	if !cp.isAuthorized(tagId) {
+		return chargepoint.ErrTagUnauthorized
 	}
 
-	// todo sample power meter to get current energy value
+	// Get sampling parameters
+	measurands, sampleInterval := cp.getSamplingParameters()
 
+	// Start the charging on EVSE
+	err := cp.evseManager.StartCharging(evseId, nil, measurands, sampleInterval)
+	if err != nil {
+		logInfo.WithError(err).Error("Unable to start charging on EVSE")
+		return err
+	}
+
+	// Log the session in the session manager
+	err = cp.sessionService.StartSession(evseId, nil, tagId, "")
+	if err != nil {
+		logInfo.WithError(err).Error("Unable to start a session")
+		return err
+	}
+
+	logInfo.Infof("Started charging connector at %s", time.Now())
+
+	// Notify the central system that the transaction has started
 	request := core.NewStartTransactionRequest(
 		evseId,
 		tagId,
-		0,
+		0, // todo sample power meter to get current energy value
 		types.NewDateTime(time.Now()),
 	)
 
@@ -49,54 +131,65 @@ func (cp *ChargePoint) StartCharging(evseId, connectorId int, tagId string) erro
 
 		startTransactionConf := confirmation.(*core.StartTransactionConfirmation)
 
-		switch startTransactionConf.IdTagInfo.Status {
-		case types.AuthorizationStatusAccepted, types.AuthorizationStatusConcurrentTx:
-			transactionId := fmt.Sprintf("%d", startTransactionConf.TransactionId)
-
-			err := cp.sessionManager.StartSession(evseId, nil, tagId, transactionId)
-			if err != nil {
-				logInfo.WithError(err).Error("Unable to start a session")
-				return
-			}
-
-			// Get metering parameters
-			measurands, sampleInterval := cp.getSessionParameters()
-
-			// Start the charging on EVSE
-			err = cp.evseManager.StartCharging(evseId, nil, measurands, sampleInterval)
-			if err != nil {
-				logInfo.WithError(err).Error("Unable to start charging on EVSE")
-				return
-			}
-
-			logInfo.Infof("Started charging connector at %s", time.Now())
-		case types.AuthorizationStatusBlocked, types.AuthorizationStatusInvalid, types.AuthorizationStatusExpired:
-			fallthrough
-		default:
-			logInfo.Warn("Transaction unauthorized")
+		// Update the transaction id in the session
+		logInfo.Infof("Updating transaction ID: %d", startTransactionConf.TransactionId)
+		err = cp.sessionService.AddTransactionIdToSession(evseId, nil, strconv.Itoa(startTransactionConf.TransactionId))
+		if err != nil {
+			logInfo.WithError(err).Warn("Unable to update transaction ID in the session manager")
 		}
 
 		// Cache the tag
-		err := cp.tagManager.AddTag(tagId, startTransactionConf.IdTagInfo)
+		err = cp.tagAuthService.CacheTag(tagId, startTransactionConf.IdTagInfo)
 		if err != nil {
 			logInfo.WithError(err).Warn("Unable to cache tag")
 		}
+
+		defer cp.isAuthorized(tagId)
 	}
 
 	return cp.sendRequest(request, callback)
 }
 
-func (cp *ChargePoint) getSessionParameters() ([]types.Measurand, string) {
+// StartChargingFreeMode starts a charging session in free mode.
+func (cp *ChargePoint) StartChargingFreeMode(evseId int) error {
+	if !cp.info.FreeMode {
+		return errors.New("free mode is not enabled")
+	}
+
+	logInfo := cp.logger.WithField("evseId", evseId)
+	logInfo.Info("Free mode enabled, starting charging")
+
+	// Get sampling parameters
+	measurements, sampleInterval := cp.getSamplingParameters()
+
+	// Start the charging on EVSE
+	return cp.evseManager.StartCharging(evseId, nil, measurements, sampleInterval)
+}
+
+// getSamplingParameters retrieves the sampling parameters from the charge point settings.
+func (cp *ChargePoint) getSamplingParameters() ([]types.Measurand, string) {
 	cp.logger.Debug("Getting session sampling parameters")
 
 	// Get metering parameters
-	variableManager := cp.settingsManager.GetOcppV16Manager()
-	sampleInterval, err := variableManager.GetConfigurationValue(ocpp_v16.MeterValueSampleInterval)
+	sampleInterval := cp.getSamplingInterval()
+	measurands := cp.getMeasurands()
+
+	return measurands, *sampleInterval
+}
+
+func (cp *ChargePoint) getSamplingInterval() *string {
+	sampleInterval, err := cp.settingsManager.GetConfigurationValue(ocpp_v16.MeterValueSampleInterval)
 	if err != nil {
+		// Default to 90 seconds
 		sampleInterval = lo.ToPtr("90s")
 	}
 
-	measurandsString, err := variableManager.GetConfigurationValue(ocpp_v16.MeterValuesSampledData)
+	return sampleInterval
+}
+
+func (cp *ChargePoint) getMeasurands() []types.Measurand {
+	// Get measurands to sample
+	measurandsString, err := cp.settingsManager.GetConfigurationValue(ocpp_v16.MeterValuesSampledData)
 	if err != nil {
 		measurandsString = lo.ToPtr(string(types.MeasurandEnergyActiveImportRegister))
 	}
@@ -106,5 +199,5 @@ func (cp *ChargePoint) getSessionParameters() ([]types.Measurand, string) {
 		measurands = append(measurands, types.Measurand(measurand))
 	}
 
-	return measurands, *sampleInterval
+	return measurands
 }

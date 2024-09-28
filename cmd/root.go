@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/ChargePi/ChargePi-go/internal/pkg/models/settings"
-	"github.com/ChargePi/ChargePi-go/pkg/observability/logging"
+	"github.com/ChargePi/ChargePi-go/internal/pkg/configuration"
+	"github.com/ChargePi/ChargePi-go/pkg/observability"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,7 +17,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	cobra.OnInitialize(func() {
-		logging.Setup(log.StandardLogger(), settings.Logging{}, viper.GetBool(settings.Debug))
+		observability.SetupLogging(log.StandardLogger(), observability.Logging{}, viper.GetBool(configuration.Debug))
 	})
 
 	rootCmd.AddCommand(runCommand())
@@ -25,8 +25,8 @@ func init() {
 	rootCmd.AddCommand(exportCommand())
 	rootCmd.AddCommand(importCommand())
 
-	rootCmd.PersistentFlags().BoolP(settings.DebugFlag, "d", false, "debug mode")
-	_ = viper.BindPFlag(settings.Debug, rootCmd.PersistentFlags().Lookup(settings.DebugFlag))
+	rootCmd.PersistentFlags().BoolP(configuration.DebugFlag, "d", false, "debug mode")
+	_ = viper.BindPFlag(configuration.Debug, rootCmd.PersistentFlags().Lookup(configuration.DebugFlag))
 }
 
 func Execute() {

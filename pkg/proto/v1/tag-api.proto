@@ -33,7 +33,7 @@ message RemoveCardRequest {
 }
 
 message RemoveCardResponse {
-  api.RequestStatus Status = 1;
+  api.ResponseStatus Status = 1;
 }
 
 message AuthorizationHistoryResponse {

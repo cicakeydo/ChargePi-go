@@ -55,7 +55,7 @@ message ChangeConnectionDetailsRequest {
 
 message ChangeConnectionDetailsResponse {
   ConnectionSettings ConnectionSettings = 1;
-  string status = 2;
+  ResponseStatus status = 2;
 }
 
 /*------------------ ChargePointDetails ------------------------ */
@@ -65,7 +65,7 @@ message ChangeChargePointDetailsRequest {
 }
 
 message ChangeChargePointDetailsResponse {
-  string status = 2;
+  ResponseStatus status = 2;
 }
 
 message GetChargePointDetailsResponse {
@@ -80,7 +80,7 @@ message GetVersionResponse {
 
 message GetStatusResponse {
   bool Connected = 1;
-  string Status = 2;
+  ResponseStatus Status = 2;
 }
 
 /*------------------ Restart ------------------------ */
@@ -96,7 +96,7 @@ message SetDisplaySettingsRequest {
 }
 
 message SetDisplaySettingsResponse {
-  string status = 1;
+  ResponseStatus status = 1;
 }
 
 message GetDisplaySettingsResponse {
@@ -110,7 +110,7 @@ message SetReaderSettingsRequest {
 }
 
 message SetReaderSettingsResponse {
-  string status = 1;
+  ResponseStatus status = 1;
 }
 
 message GetReaderSettingsResponse {
@@ -124,7 +124,7 @@ message SetIndicatorSettingsRequest {
 }
 
 message SetIndicatorSettingsResponse {
-  string status = 1;
+  ResponseStatus status = 1;
 }
 
 message GetIndicatorSettingsResponse {

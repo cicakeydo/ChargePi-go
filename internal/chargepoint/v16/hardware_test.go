@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChargePi/ChargePi-go/pkg/indicator"
+	"github.com/ChargePi/ChargePi-go/pkg/hardware/indicator"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/core"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
@@ -44,7 +44,7 @@ func (s *hardwareTestSuite) TestDisplayLedStatus() {
 
 func (s *hardwareTestSuite) TestIndicateCard() {
 	// Ok indication
-	s.cp.indicateCard(1, indicator.White)
+	s.cp.indicateCardRead(1, indicator.White)
 
 	time.Sleep(time.Second)
 }
@@ -52,4 +52,8 @@ func (s *hardwareTestSuite) TestIndicateCard() {
 func TestHardware(t *testing.T) {
 	log.SetLevel(log.TraceLevel)
 	suite.Run(t, new(hardwareTestSuite))
+}
+
+func Test_ColorMapping(t *testing.T) {
+
 }

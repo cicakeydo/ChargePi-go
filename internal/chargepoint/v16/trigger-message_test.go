@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChargePi/ChargePi-go/internal/pkg/models/notifications"
+	"github.com/ChargePi/ChargePi-go/internal/pkg/notifications"
 	"github.com/ChargePi/ChargePi-go/internal/pkg/scheduler"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/core"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/remotetrigger"

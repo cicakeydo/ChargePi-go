@@ -157,8 +157,5 @@ func (s *coreTestSuite) TestOnRemoteStartTransaction() {
 
 func TestCore(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
-
-	ocpp_v16.NewEmptyConfiguration()
-
 	suite.Run(t, new(coreTestSuite))
 }

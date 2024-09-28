@@ -1,7 +1,7 @@
 with-expecter: true
-dir: mocks
+dir: "{{.InterfaceDir}}/mocks"
 outpkg: mocks
-filename: "mock_{{.PackageName}}_{{.InterfaceName}}.go"
+filename: "mock_{{.InterfaceName}}.go"
 mockname: "Mock{{.InterfaceName}}"
 packages:
   github.com/ChargePi/ChargePi-go/internal/auth:
@@ -14,11 +14,14 @@ packages:
   github.com/ChargePi/ChargePi-go/internal/chargepoint:
     interfaces:
       ChargePoint:
+        config:
+          # To prevent cyclic dependencies, it should be in the same package
+          inpackage: true
+          dir: "{{.InterfaceDir}}"
 
   github.com/ChargePi/ChargePi-go/internal/sessions:
     interfaces:
       SessionRepository:
-
       Service:
         config:
           mockname: "MockSession{{.InterfaceName}}"
@@ -26,7 +29,7 @@ packages:
 
   github.com/ChargePi/ChargePi-go/internal/diagnostics:
     interfaces:
-      Manager:
+      Service:
         config:
           mockname: "MockDiagnostics{{.InterfaceName}}"
 
@@ -37,6 +40,9 @@ packages:
       Manager:
         config:
           mockname: "MockEVSE{{.InterfaceName}}"
+
+      EvseSettingsRepository:
+      reservationStore:
 
   github.com/ChargePi/ChargePi-go/internal/evse:
     interfaces:
@@ -51,7 +57,7 @@ packages:
 
   github.com/ChargePi/ChargePi-go/internal/smart-charging:
     interfaces:
-      Manager:
+      Service:
         config:
           mockname: "MockSmartCharging{{.InterfaceName}}"
       ChargingScheduleRepository:
@@ -75,3 +81,13 @@ packages:
   github.com/ChargePi/ChargePi-go/pkg/hardware/power-meter:
     interfaces:
       PowerMeter:
+
+  github.com/ChargePi/ChargePi-go/pkg/encryption:
+    interfaces:
+      Encryptor:
+
+  github.com/ChargePi/ChargePi-go/internal/pkg/configuration/manager:
+    interfaces:
+      SettingsRepository:
+      OcppConfigurationRepository:
+      Manager:

@@ -6,6 +6,7 @@ option go_package = "github.com/ChargePi/ChargePi-go/pkg/proto/v1/grpc";
 import "connector.proto";
 import "hardware.proto";
 import "google/protobuf/empty.proto";
+import "enums.proto";
 
 // Evse settings
 service Evse {
@@ -42,7 +43,7 @@ message AddEvseRequest {
 }
 
 message AddEvseResponse {
-  string status = 1;
+  ResponseStatus status = 1;
   EVSE EVSE = 2;
 }
 
@@ -63,7 +64,7 @@ message SetPowerMeterRequest {
 }
 
 message SetPowerMeterResponse {
-  string status = 1;
+  ResponseStatus status = 1;
 }
 
 message GetUsageForEVSERequest {

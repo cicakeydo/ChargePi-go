@@ -7,3 +7,6 @@ proto:
 
 install-dependencies:
 	sudo sh ./scripts/install-dependencies.sh pn532_uart 0
+
+gen-mocks:
+	mockery

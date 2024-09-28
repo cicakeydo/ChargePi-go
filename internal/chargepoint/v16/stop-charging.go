@@ -1,18 +1,42 @@
 package v16
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/ChargePi/ChargePi-go/internal/chargepoint"
 	"github.com/ChargePi/ChargePi-go/internal/evse"
-	"github.com/ChargePi/ChargePi-go/internal/pkg/models/charge-point"
-	"github.com/ChargePi/ChargePi-go/internal/pkg/util"
+	"github.com/ChargePi/ChargePi-go/pkg/util"
 	"github.com/lorenzodonini/ocpp-go/ocpp"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/core"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/types"
 	log "github.com/sirupsen/logrus"
 )
 
+func (cp *ChargePoint) OnRemoteStopTransaction(request *core.RemoteStopTransactionRequest) (confirmation *core.RemoteStopTransactionConfirmation, err error) {
+	cp.logger.WithField("transactionId", request.TransactionId).Infof("Received request %s", request.GetFeatureName())
+
+	response := types.RemoteStartStopStatusRejected
+	transactionId := fmt.Sprintf("%d", request.TransactionId)
+
+	session, fErr := cp.sessionService.GetSessionWithTransactionId(transactionId)
+	if fErr == nil {
+		cp.logger.WithField("transactionId", request.TransactionId).Infof("Stopping transaction")
+		response = types.RemoteStartStopStatusAccepted
+
+		// Delay stopping the transaction by 3 seconds
+		_, schedulerErr := cp.scheduler.Every(3).Seconds().LimitRunsTo(1).Do(cp.StopCharging, session.EvseId, session.ConnectorId, core.ReasonRemote)
+		if schedulerErr != nil {
+			cp.logger.WithError(err).Error("Failed to schedule stop charging")
+			response = types.RemoteStartStopStatusRejected
+		}
+	}
+
+	return core.NewRemoteStopTransactionConfirmation(response), nil
+}
+
+// StopCharging Stops a transaction on the specified EVSE and connector. The reason for stopping the transaction should be provided.
 func (cp *ChargePoint) StopCharging(evseId, connectorId int, reason core.Reason) error {
 	cpEvse, err := cp.evseManager.GetEVSE(evseId)
 	if err != nil {
@@ -22,30 +46,54 @@ func (cp *ChargePoint) StopCharging(evseId, connectorId int, reason core.Reason)
 	return cp.stopChargingConnector(cpEvse, reason)
 }
 
-// stopChargingConnector Stop charging a connector with the specified ID. Update the status(es), turn off the ConnectorImpl and calculate the energy consumed.
+// stopChargingConnector Stop charging a connector with the specified ID.
 func (cp *ChargePoint) stopChargingConnector(connector evse.EVSE, reason core.Reason) error {
 	if util.IsNilInterfaceOrPointer(connector) {
-		return chargePoint.ErrConnectorNil
+		return chargepoint.ErrConnectorNil
 	}
 
+	evseId := connector.GetEvseId()
 	logInfo := cp.logger.WithFields(log.Fields{
-		"evseId": connector.GetEvseId(),
+		"evseId": evseId,
 		"reason": reason,
 	})
+	logInfo.Info("Stopping transaction")
 
 	// Check if the connector is already stopped
-	session, err := cp.sessionManager.GetSession(connector.GetEvseId(), nil)
+	session, err := cp.sessionService.GetSession(evseId, nil)
 	if err != nil {
 		return err
 	}
 
+	// Stop charging on EVSE
+	err = connector.StopCharging(reason)
+	if err != nil {
+		logInfo.WithError(err).Errorf("Unable to stop charging")
+		return err
+	}
+
+	logInfo.Infof("Stopped charging at %s", time.Now())
+
+	// Mark the session as stopped in the session manager
+	err = cp.sessionService.StopSession(evseId, nil, nil, &session.TransactionId)
+	if err != nil {
+		logInfo.WithError(err).Warnf("Unable to stop session")
+	}
+
+	// Notify the backend that the session has stopped
 	transactionId, convErr := strconv.Atoi(session.TransactionId)
 	if convErr != nil {
 		return convErr
 	}
 
+	// Get the energy consumption of the session
+	consumption, err := session.GetEnergyConsumption()
+	if err != nil {
+		return err
+	}
+
 	request := core.NewStopTransactionRequest(
-		int(session.CalculateEnergyConsumptionWithAvgPower()),
+		int(consumption),
 		types.NewDateTime(time.Now()),
 		transactionId,
 	)
@@ -56,22 +104,6 @@ func (cp *ChargePoint) stopChargingConnector(connector evse.EVSE, reason core.Re
 			logInfo.WithError(protoError).Errorf("Server responded with error for stopping a transaction")
 			return
 		}
-
-		logInfo.Info("Stopping transaction")
-
-		// Stop charging on EVSE
-		err = connector.StopCharging(reason)
-		if err != nil {
-			logInfo.WithError(err).Errorf("Unable to stop charging")
-			return
-		}
-
-		err = cp.sessionManager.StopSession(session.TransactionId)
-		if err != nil {
-			logInfo.WithError(err).Warnf("Unable to stop session")
-		}
-
-		logInfo.Infof("Stopped charging at %s", time.Now())
 	}
 
 	return cp.sendRequest(request, callback)
