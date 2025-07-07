@@ -10,7 +10,7 @@ chargePoint:
   connectionSettings:
     id: ChargePi-Simulator
     protocolVersion: '1.6'
-    uri: ws://localhost:8080/steve/websocket/CentralSystemService
+    uri: ws://localhost:8180/steve/websocket/CentralSystemService
     basicAuthUser: ''
     basicAuthPass: ''
     tls:
