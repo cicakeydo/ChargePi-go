@@ -14,6 +14,7 @@ type Dummy struct {
 func NewDummy(settings *settings.DisplayDummy) (*Dummy, error) {
 	return &Dummy{
 		settings: *settings,
+		logger:   log.StandardLogger(),
 	}, nil
 }
 

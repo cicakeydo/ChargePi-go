@@ -1,0 +1,18 @@
+evseId: 1
+maxPower: 22
+evcc:
+  type: Dummy
+  dummy:
+    enabled: true
+powerMeter:
+  enabled: true
+  type: dummy
+  dummy:
+    voltage: 230.0
+    voltageBehaviour: "static"
+    baseCurrent: 0.0
+    currentBehaviour: "static"
+connectors:
+  - connectorId: 1
+    type: "Type2"
+    status: "Available"

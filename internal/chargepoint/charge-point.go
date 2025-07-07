@@ -16,17 +16,17 @@ import (
 	"github.com/ChargePi/ChargePi-go/pkg/models/ocpp"
 	"github.com/ChargePi/ocppManager-go/ocpp_v16"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/core"
-	"github.com/lorenzodonini/ocpp-go/ocpp1.6/localauth"
-	"github.com/lorenzodonini/ocpp-go/ocpp1.6/remotetrigger"
-	"github.com/lorenzodonini/ocpp-go/ocpp1.6/reservation"
+	// "github.com/lorenzodonini/ocpp-go/ocpp1.6/localauth"
+	// "github.com/lorenzodonini/ocpp-go/ocpp1.6/remotetrigger"
+	// "github.com/lorenzodonini/ocpp-go/ocpp1.6/reservation"
 	log "github.com/sirupsen/logrus"
 )
 
 var supportedOcppV16Profiles = []string{
 	core.ProfileName,
-	reservation.ProfileName,
-	remotetrigger.ProfileName,
-	localauth.ProfileName,
+	// reservation.ProfileName,  // Temporarily disabled for simulator mode
+	// remotetrigger.ProfileName, // Temporarily disabled for simulator mode
+	// localauth.ProfileName,     // Temporarily disabled for simulator mode
 }
 
 // CreateChargePoint Creates a OCPP-enabled charge point based on the protocol version
