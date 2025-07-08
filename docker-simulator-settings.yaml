@@ -1,0 +1,66 @@
+api:
+  enabled: true
+  address: 0.0.0.0:4269
+
+ui:
+  enabled: true
+  address: 0.0.0.0:3000
+
+chargePoint:
+  connectionSettings:
+    id: ChargePi-Simulator
+    protocolVersion: '1.6'
+    serverUri: ws://host.docker.internal:8180/steve/websocket/CentralSystemService
+    basicAuthUser: ''
+    basicAuthPass: ''
+    tls:
+      isEnabled: false
+
+  info:
+    type: AC
+    maxPower: 22
+    maxChargingTime: 180
+    freeMode: false
+    ocpp:
+      vendor: ChargePi
+      model: ChargePi-Simulator
+      firmwareVersion: 1.0.0
+      serialNumber: SIM001
+
+  logging:
+    type:
+      - file
+    format: text
+    level: debug
+
+  hardware:
+    display:
+      enabled: true
+      driver: dummy
+      language: en
+      dummy:
+        enabled: true
+
+    reader:
+      enabled: true
+      model: dummy
+      dummy:
+        tagIds:
+          - "04142C5A2D4980"
+          - "04F4275A2D4980"
+          - "040E2D5A2D4980"
+
+    indicator:
+      enabled: true
+      type: dummy
+      indicateCardRead: true
+      statuses:
+        available: "#00FF00"
+        reserved: "#0000FF"
+        preparing: "#FFFF00"
+        charging: "#FF8000"
+        finishing: "#800080"
+        fault: "#FF0000"
+        error: "#FF0000"
+      dummy:
+        enabled: true

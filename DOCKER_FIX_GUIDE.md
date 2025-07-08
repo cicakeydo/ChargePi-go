@@ -7,6 +7,14 @@ Your ChargePi container is **failing and restarting continuously**, plus it has 
 docker-chargepi-1    Restarting (1) 10 seconds ago    [NO PORTS MAPPED]
 ```
 
+### **Root Cause Found:**
+The container expects field `serverUri` but the configuration uses `uri`:
+```
+"ServerUri" Error:Field validation for 'ServerUri' failed on the 'required' tag
+```
+
+**✅ SOLUTION:** Use corrected `docker-simulator-settings.yaml` with proper field names.
+
 ## 🔧 **STEP-BY-STEP FIX**
 
 ### **Step 1: Check the Error Logs**
@@ -22,16 +30,22 @@ docker stop docker-chargepi-1
 docker rm docker-chargepi-1
 ```
 
-### **Step 3: Run ChargePi with Proper Port Forwarding**
+### **Step 3: Run ChargePi with Fixed Configuration**
+
+**First, create the correct configuration file:**
+```bash
+# Copy the corrected configuration
+cp docker-simulator-settings.yaml ./simulator-settings.yaml
+```
 
 #### Option A: Using Docker Run (Recommended)
 ```bash
 docker run -d --name chargepi-simulator \
   -p 3000:3000 \
   -p 4269:4269 \
-  -v $(pwd)/simulator-settings.yaml:/app/simulator-settings.yaml \
+  -v $(pwd)/docker-simulator-settings.yaml:/app/settings.yaml \
   docker-chargepi \
-  run --settings=/app/simulator-settings.yaml
+  run --settings=/app/settings.yaml
 ```
 
 #### Option B: If You Have Docker Compose
@@ -44,8 +58,8 @@ services:
       - "3000:3000"    # UI
       - "4269:4269"    # API
     volumes:
-      - ./simulator-settings.yaml:/app/simulator-settings.yaml
-    command: run --settings=/app/simulator-settings.yaml
+      - ./docker-simulator-settings.yaml:/app/settings.yaml
+    command: run --settings=/app/settings.yaml
 ```
 
 Then run:
@@ -71,8 +85,8 @@ chargePoint:
   connectionSettings:
     id: ChargePi-Simulator
     protocolVersion: '1.6'
-    uri: ws://host.docker.internal:8180/steve/websocket/CentralSystemService
-    # Note: Use host.docker.internal instead of localhost to reach Steve from container
+    serverUri: ws://host.docker.internal:8180/steve/websocket/CentralSystemService
+    # Note: Use serverUri (not uri) and host.docker.internal to reach Steve from container
     basicAuthUser: ''
     basicAuthPass: ''
     tls:
