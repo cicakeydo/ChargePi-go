@@ -8,11 +8,11 @@ ui:
 
 chargePoint:
   connectionSettings:
-    id: ChargePi-Simulator
+    chargePointId: ChargePi-Simulator
     protocolVersion: '1.6'
-    uri: host.docker.internal:8180/steve/websocket/CentralSystemService
-    basicAuthUser: ''
-    basicAuthPass: ''
+    url: host.docker.internal:8180/steve/websocket/CentralSystemService
+    basicAuthUsername: ''
+    basicAuthPassword: ''
     tls:
       isEnabled: false
 

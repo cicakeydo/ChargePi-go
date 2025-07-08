@@ -1,16 +1,16 @@
 api:
   enabled: true
-  address: 0.0.0.0:4270
+  address: 0.0.0.0:4269
 
 ui:
   enabled: true
-  address: 0.0.0.0:3001
+  address: 0.0.0.0:3000
 
 chargePoint:
   connectionSettings:
     id: ChargePi-Simulator
     protocolVersion: '1.6'
-    uri: localhost:8180/steve/websocket/CentralSystemService
+    uri: host.docker.internal:8180/steve/websocket/CentralSystemService
     basicAuthUser: ''
     basicAuthPass: ''
     tls:
